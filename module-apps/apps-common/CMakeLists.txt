@@ -98,6 +98,7 @@ target_link_libraries(apps-common
         service-cellular
         service-evtmgr
         service-time
+        bell::alarms
     PUBLIC
         module-audio
         module-bsp

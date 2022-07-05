@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021, Mudita Sp. z.o.o. All rights reserved.
+// Copyright (c) 2017-2022, Mudita Sp. z.o.o. All rights reserved.
 // For licensing, see https://github.com/mudita/MuditaOS/LICENSE.md
 
 #pragma once
@@ -10,7 +10,9 @@ namespace gui
     class BedtimeReminderPopupRequestParams : public PopupRequestParams
     {
       public:
-        BedtimeReminderPopupRequestParams() : PopupRequestParams{gui::popup::ID::BedtimeNotification}
+        BedtimeReminderPopupRequestParams(uint32_t id) : PopupRequestParams{gui::popup::ID::BedtimeNotification}, id{id}
         {}
+
+        uint32_t id;
     };
 } // namespace gui

@@ -16,6 +16,7 @@
 #include <widgets/SideListView.hpp>
 #include <common/windows/BellFinishedWindow.hpp>
 #include "service-appmgr/Controller.hpp" // for Controller
+#include <service-time/AlarmServiceAPI.hpp>
 
 namespace gui
 {

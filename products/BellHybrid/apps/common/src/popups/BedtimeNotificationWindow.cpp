@@ -1,15 +1,18 @@
-﻿// Copyright (c) 2017-2021, Mudita Sp. z.o.o. All rights reserved.
+﻿// Copyright (c) 2017-2022, Mudita Sp. z.o.o. All rights reserved.
 // For licensing, see https://github.com/mudita/MuditaOS/LICENSE.md
 
 #include <audio/AudioMessage.hpp>
 #include <apps-common/popups/Popups.hpp>
 #include <apps-common/popups/data/PopupRequestParams.hpp>
+#include <popups/BedtimeReminderPopupRequestParams.hpp>
 #include <common/popups/BedtimeNotificationWindow.hpp>
 #include <gui/input/InputEvent.hpp>
 #include <gui/widgets/Icon.hpp>
 #include <i18n/i18n.hpp>
 #include <purefs/filesystem_paths.hpp>
 #include <service-appmgr/Controller.hpp>
+#include <service-time/AlarmServiceAPI.hpp>
+#include <log/log.hpp>
 
 namespace gui
 {
@@ -42,6 +45,21 @@ namespace gui
         icon->image->setMargins(Margins(0, icon::image_top_margin, 0, icon::image_bottom_margin));
         icon->text->setFont(style::window::font::verybiglight);
     }
+
+    bool BedtimeNotificationWindow::handleSwitchData(SwitchData *data)
+    {
+        LOG_INFO("Onufry %s", __func__);
+        if (data == nullptr) {
+            LOG_ERROR("Received null pointer");
+            return false;
+        }
+
+        auto *eventData = dynamic_cast<gui::BedtimeReminderPopupRequestParams *>(data);
+        ID              = eventData->id;
+
+        return true;
+    }
+
     void BedtimeNotificationWindow::onBeforeShow(ShowMode mode, [[maybe_unused]] SwitchData *data)
     {
         WindowWithTimer::onBeforeShow(mode, data);
@@ -55,12 +73,15 @@ namespace gui
 
     void BedtimeNotificationWindow::returnToPreviousWindow()
     {
+        alarms::AlarmServiceAPI::requestTurnOffRingingAlarm(app, ID);
         detachTimerIfExists();
         app::manager::Controller::sendAction(
             application,
             app::manager::actions::AbortPopup,
             std::make_unique<gui::PopupRequestParams>(gui::popup::ID::BedtimeNotification));
         application->returnToPreviousWindow();
+
+        LOG_INFO("Onufry %s", __func__);
     }
 
     bool BedtimeNotificationWindow::onInput(const InputEvent &inputEvent)

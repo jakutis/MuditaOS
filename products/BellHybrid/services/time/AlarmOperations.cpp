@@ -202,6 +202,7 @@ namespace alarms
     {
         if (bedtime.decide(now)) {
             auto bedtimeEvent           = std::make_shared<AlarmEventRecord>();
+            bedtimeEvent->ID            = 123;
             bedtimeEvent.get()->enabled = true;
             handleAlarmEvent(bedtimeEvent, alarms::AlarmType::BedtimeReminder, true);
         }

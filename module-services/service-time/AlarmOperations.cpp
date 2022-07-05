@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021, Mudita Sp. z.o.o. All rights reserved.
+// Copyright (c) 2017-2022, Mudita Sp. z.o.o. All rights reserved.
 // For licensing, see https://github.com/mudita/MuditaOS/LICENSE.md
 
 #include "AlarmOperations.hpp"
@@ -24,6 +24,7 @@ namespace alarms
 
     void AlarmOperationsCommon::updateEventsCache(TimePoint now)
     {
+        // here
         OnGetAlarmsProcessed callback = [&](std::vector<SingleEventRecord> singleEvents) {
             nextSingleEvents.clear();
             nextSingleEvents.reserve(singleEvents.size());
@@ -344,6 +345,7 @@ namespace alarms
 
     auto AlarmOperationsCommon::processNextEventsQueue(const TimePoint now) -> void
     {
+        //        LOG_INFO("Onufhere");
         if (nextSingleEvents.front()->startDate <= now) {
             ongoingSingleEvents.insert(ongoingSingleEvents.end(),
                                        std::make_move_iterator(nextSingleEvents.begin()),

@@ -1,0 +1,10 @@
+add_gtest_executable(
+    NAME
+        bell-alarms
+    SRCS
+        test-alarms.cpp
+    LIBS
+        bell::alarms
+    INCLUDE
+        $<TARGET_PROPERTY:bell::alarms,INCLUDE_DIRECTORIES>
+)

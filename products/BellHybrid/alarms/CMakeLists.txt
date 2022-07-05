@@ -1,3 +1,5 @@
+module_is_test_entity(bell-alarms)
+
 add_library(alarms STATIC)
 add_library(bell::alarms ALIAS alarms)
 
@@ -5,6 +7,7 @@ target_sources(alarms
     PRIVATE
         BellAlarmHandler.cpp
         src/AlarmSoundPaths.cpp
+
         src/actions/PlayAudioActions.cpp
         src/actions/NotifyGUIAction.cpp
         src/actions/NotifyGUIBedtimeReminderAction.cpp
@@ -44,3 +47,7 @@ target_link_libraries(alarms
         module-db
         service-time
 )
+
+if (${ENABLE_TESTS})
+    add_subdirectory(tests)
+endif()
