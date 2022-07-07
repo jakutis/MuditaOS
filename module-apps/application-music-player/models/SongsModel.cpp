@@ -95,7 +95,11 @@ namespace app::music
         this->navBarTemporaryMode            = navBarTemporaryMode;
         this->navBarRestoreFromTemporaryMode = navBarRestoreFromTemporaryMode;
 
-        songsRepository->initCache();
+        static bool cacheCreated = false;
+        if (!cacheCreated) {
+            songsRepository->initCache();
+            cacheCreated = true;
+        }
     }
 
     bool SongsModel::isSongPlaying() const noexcept
