@@ -19,7 +19,8 @@ namespace bsp
 
     namespace torch
     {
-        static xQueueHandle qHandleIrq = NULL;
+        static xQueueHandle qHandleIrq   = nullptr;
+        static constexpr auto delayTicks = 5;
 
         static I2CAddress addr = {.deviceAddress = 0x63, .subAddress = 0, .subAddressSize = 1};
 
@@ -27,11 +28,21 @@ namespace bsp
         const unsigned short max_current_mA = 150;
         ColourTemperature currentColourTemp = ColourTemperature::warmest;
 
+        void powerOnTorch()
+        {
+            gpio->WritePin(static_cast<std::uint32_t>(BoardDefinitions::TORCH_DRIVER_EN), AL3644TT_ENABLE);
+        }
+
+        void powerOffTorch()
+        {
+            gpio->WritePin(static_cast<std::uint32_t>(BoardDefinitions::TORCH_DRIVER_EN), AL3644TT_DISABLE);
+        }
+
         int32_t init(xQueueHandle qHandle)
         {
             i2c = DriverI2C::Create(
                 static_cast<I2CInstances>(BoardDefinitions::TORCH_DRIVER_I2C),
-                DriverI2CParams{.baudrate = static_cast<uint32_t>(BoardDefinitions::TORCH_DRIVER_I2C_BAUDRATE)});
+                DriverI2CParams{.baudrate = static_cast<std::uint32_t>(BoardDefinitions::TORCH_DRIVER_I2C_BAUDRATE)});
 
             qHandleIrq = qHandle;
 
@@ -42,11 +53,11 @@ namespace bsp
             gpio->ConfPin(DriverGPIOPinParams{.dir      = DriverGPIOPinParams::Direction::Output,
                                               .irqMode  = DriverGPIOPinParams::InterruptMode::NoIntmode,
                                               .defLogic = 0,
-                                              .pin      = static_cast<uint32_t>(BoardDefinitions::TORCH_DRIVER_EN)});
-            gpio->WritePin(static_cast<uint32_t>(BoardDefinitions::TORCH_DRIVER_EN), 0);
-            vTaskDelay(pdMS_TO_TICKS(5));
-            gpio->WritePin(static_cast<uint32_t>(BoardDefinitions::TORCH_DRIVER_EN), 1);
-            vTaskDelay(pdMS_TO_TICKS(5));
+                                              .pin = static_cast<std::uint32_t>(BoardDefinitions::TORCH_DRIVER_EN)});
+            powerOffTorch();
+            vTaskDelay(pdMS_TO_TICKS(delayTicks));
+            powerOnTorch();
+            vTaskDelay(pdMS_TO_TICKS(delayTicks));
 
             auto present = isPresent();
             turn(State::off);
@@ -56,7 +67,7 @@ namespace bsp
 
         void deinit()
         {
-            qHandleIrq = NULL;
+            qHandleIrq = nullptr;
             turn(State::off);
         }
 
@@ -64,9 +75,9 @@ namespace bsp
         {
             al3644tt_device_id id;
             addr.subAddress = AL3644TT_DEVICE_ID_REG;
-            auto read       = i2c->Read(addr, (uint8_t *)(&id), 1);
+            auto read       = i2c->Read(addr, (std::uint8_t *)(&id), sizeof(al3644tt_device_id));
 
-            if (read != 1) {
+            if (read != sizeof(std::uint8_t)) {
                 return false;
             }
 
@@ -86,16 +97,17 @@ namespace bsp
                 .brightness_code          = al3644tt_current_convert(mA > max_current_mA ? max_current_mA : mA),
                 .led2_brightness_override = AL3644TT_LED1_TORCH_BRIGHTNESS_OVERRIDE,
             };
-            auto wrote = i2c->Write(addr, (uint8_t *)(&led1_brightness), 1);
-            if (wrote != 1) {
+            auto wrote = i2c->Write(addr, (std::uint8_t *)(&led1_brightness), sizeof(std::uint8_t));
+            if (wrote != sizeof(std::uint8_t)) {
                 return false;
             }
             return true;
-        };
+        }
+
         bool turn(State state, ColourTemperature colourTemp)
         {
             if (state == State::on) {
-                gpio->WritePin(static_cast<uint32_t>(BoardDefinitions::TORCH_DRIVER_EN), 1);
+                powerOnTorch();
                 setCurrent(max_current_mA);
             }
 
@@ -105,25 +117,31 @@ namespace bsp
 
             addr.subAddress = AL3644TT_ENABLE_REG;
             al3644tt_enable_reg en_reg{
-                .led1_en = static_cast<uint8_t>(currentColourTemp == ColourTemperature::warmest && state == State::on
-                                                    ? AL3644TT_LED_ENABLED
-                                                    : AL3644TT_LED_DISABLED),
-                .led2_en = static_cast<uint8_t>(currentColourTemp == ColourTemperature::coldest && state == State::on
-                                                    ? AL3644TT_LED_ENABLED
-                                                    : AL3644TT_LED_DISABLED),
-                .mode    = 0b10,
+                .led1_en = static_cast<std::uint8_t>(
+                    currentColourTemp == ColourTemperature::warmest && state == State::on ? AL3644TT_LED_ENABLED
+                                                                                          : AL3644TT_LED_DISABLED),
+                .led2_en = static_cast<std::uint8_t>(
+                    currentColourTemp == ColourTemperature::coldest && state == State::on ? AL3644TT_LED_ENABLED
+                                                                                          : AL3644TT_LED_DISABLED),
+                .mode          = 0b10,
                 .torch_temp_en = 0,
                 .strobe_en     = 0,
                 .strobe_type   = 0,
                 .tx_pin_en     = 0,
             };
-            auto wrote = i2c->Write(addr, (uint8_t *)(&en_reg), 1);
+
+            // Make sure torch is power supplied to write i2c message and wait a bit
+            if (getState() == State::off) {
+                powerOnTorch();
+                vTaskDelay(pdMS_TO_TICKS(delayTicks));
+            }
+            auto wrote = i2c->Write(addr, (std::uint8_t *)(&en_reg), sizeof(std::uint8_t));
 
             if (state == State::off) {
-                gpio->WritePin(static_cast<uint32_t>(BoardDefinitions::TORCH_DRIVER_EN), 0);
+                powerOffTorch();
             }
 
-            if (wrote != 1) {
+            if (wrote != sizeof(std::uint8_t)) {
                 return false;
             }
             return true;
@@ -131,7 +149,7 @@ namespace bsp
 
         State getState()
         {
-            auto read = gpio->ReadPin(static_cast<uint32_t>(BoardDefinitions::TORCH_DRIVER_EN));
+            auto read = gpio->ReadPin(static_cast<std::uint32_t>(BoardDefinitions::TORCH_DRIVER_EN));
             return read ? State::on : State::off;
         }
 

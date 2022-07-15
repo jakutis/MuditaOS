@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021, Mudita Sp. z.o.o. All rights reserved.
+// Copyright (c) 2017-2022, Mudita Sp. z.o.o. All rights reserved.
 // For licensing, see https://github.com/mudita/MuditaOS/LICENSE.md
 
 #pragma once
@@ -84,3 +84,6 @@ typedef struct
 constexpr auto AL3644TT_ID    = 0b000;
 constexpr auto AL3644TT_REV_1 = 0b100;
 constexpr auto AL3644TT_REV_2 = 0b010;
+
+constexpr auto AL3644TT_ENABLE  = 1;
+constexpr auto AL3644TT_DISABLE = 0;
